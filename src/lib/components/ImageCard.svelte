@@ -1,0 +1,105 @@
+<script lang="ts">
+  export let blurImageUrl: string;
+  export let fullImageUrl: string;
+  export let title: string;
+  export let description: string;
+  export let slug: string;
+
+  let fullImageLoaded = false;
+</script>
+
+<a href={`/work/${slug}`} class="card">
+  <div class="image-container">
+    <img
+      src={blurImageUrl}
+      class="blur-thumb"
+      class:hidden={fullImageLoaded}  
+      alt=""
+    />
+    <img
+      src={fullImageUrl}
+      alt={title}
+      class:loaded={fullImageLoaded}
+      on:load={() => fullImageLoaded = true}
+      loading="lazy"
+      decoding="async"
+    />
+  </div>
+  
+  <div class="info">
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </div>
+</a>
+
+<style>
+    button {
+    all: unset;  
+    width: 100%;
+    cursor: pointer;
+    display: block;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    text-indent: initial;
+    text-transform: none;
+    letter-spacing: normal;
+    word-spacing: normal;
+    line-height: normal;
+    text-shadow: none;
+    font-family: inherit;
+  }
+  .card {
+		text-decoration: none;
+		color: inherit;
+		padding: 16px;
+		border-radius: 8px;
+		background: white;
+		transition: outline 0.2s;
+	}
+
+	.card:focus, .card:hover {
+		outline: 3px solid rgb(56, 56, 56);
+		outline-offset: 2px;
+	}
+  .image-container {
+    position: relative;
+    aspect-ratio: 3/4;
+    width: 100%;
+  }
+
+  .blur-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(10px);
+    transform: scale(1.03);
+    transition: opacity 0.35s ease;  
+  }
+
+  .hidden {
+    opacity: 0;
+  }
+
+  img:not(.blur-thumb) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .loaded {
+    opacity: 1 !important;
+  }
+
+  .info {
+    font-family: Inter;
+    text-align: center;
+    color: rgb(40, 40, 40);
+    padding: 20px;
+  }
+</style>
