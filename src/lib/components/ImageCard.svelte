@@ -1,11 +1,15 @@
 <script lang="ts">
-  export let blurImageUrl: string;
-  export let fullImageUrl: string;
-  export let title: string;
-  export let description: string;
-  export let slug: string;
+interface Props {
+    title: string;
+    description: string;
+    fullImageUrl: string;
+    blurImageUrl: string;
+    slug: string;
+  }
+  let props: Props = $props();
+  let { title, description, fullImageUrl, blurImageUrl, slug } = props;
+  let fullImageLoaded = $state(false);
 
-  let fullImageLoaded = false;
 </script>
 
 <a href={`/work/${slug}`} class="card">
@@ -20,7 +24,7 @@
       src={fullImageUrl}
       alt={title}
       class:loaded={fullImageLoaded}
-      on:load={() => fullImageLoaded = true}
+      onload={() => fullImageLoaded = true}
       loading="lazy"
       decoding="async"
     />
@@ -33,24 +37,6 @@
 </a>
 
 <style>
-    button {
-    all: unset;  
-    width: 100%;
-    cursor: pointer;
-    display: block;
-    text-align: left;
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    text-indent: initial;
-    text-transform: none;
-    letter-spacing: normal;
-    word-spacing: normal;
-    line-height: normal;
-    text-shadow: none;
-    font-family: inherit;
-  }
   .card {
 		text-decoration: none;
 		color: inherit;

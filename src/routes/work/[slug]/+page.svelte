@@ -2,11 +2,11 @@
     import type { PageData } from './$types';
     import ImageOverlay from '$lib/components/ImageOverlay.svelte';
     
-    export let data: PageData;
+    let { data } = $props();
+    console.log(data);
 </script>
 
 <ImageOverlay 
     painting={data.painting}
     paintings={data.paintings}
-    onClose={() => {}}  
 />
