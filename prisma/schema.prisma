@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Password {
+  id     String @id @default(cuid())
+  hash   String
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("passwords")
+}
+
+model PortfolioSession {
+  id        String   @id @default(cuid())
+  userId    String   @unique  // One active portfolio session per user
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique  // The long-lived access token
+  expiresAt DateTime // Tied to subscription end date
+  createdAt DateTime @default(now())
+
+  @@map("portfolio_sessions")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  name            String?
+  bio             String?
+  googleId        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  portfolios      Portfolio[]
+  sessions        Session[]        
+  portfolioSession PortfolioSession? 
+  password        Password?
+
+  @@unique([googleId])
+  @@map("users")
+}
+
+model Portfolio {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pieces      Piece[]
+
+  @@map("portfolios")
+}
+
+model Piece {
+  id           Int       @id @default(autoincrement())
+  title        String
+  slug         String    @unique
+  description  String?
+  fullImageUrl String
+  blurImageUrl String
+  medium       String?
+  dimensions   String?
+  year         Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  portfolioId  Int
+  portfolio    Portfolio @relation(fields: [portfolioId], references: [id])
+
+  @@map("pieces")
+}
+
+model Session {
+  id      String   @id @default(cuid())
+  user_id String
+  expires DateTime
+  user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}

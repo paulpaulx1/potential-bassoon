@@ -1,9 +1,9 @@
 export interface Painting {
-    fullImageUrl: string,    // Changed String to string
+    fullImageUrl: string,    
     blurImageUrl: string,
     title: string,
     description: string,
-    slug: string            // Added slug
+    slug: string          
  }
  
  export const paintings: Painting[] = [

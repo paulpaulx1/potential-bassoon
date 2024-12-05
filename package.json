@@ -15,6 +15,9 @@
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test"
 	},
+	"prisma": {
+		"seed": "node prisma/seed.js"
+	},
 	"devDependencies": {
 		"@playwright/test": "^1.45.3",
 		"@sveltejs/adapter-auto": "^3.0.0",
@@ -35,6 +38,14 @@
 		"vitest": "^2.0.4"
 	},
 	"dependencies": {
+		"@oslojs/crypto": "^1.0.1",
+		"@oslojs/encoding": "^1.1.0",
+		"@paralleldrive/cuid2": "^2.2.2",
+		"@prisma/client": "^5.22.0",
+		"arctic": "^2.3.0",
+		"lucia-auth": "^1.8.0",
+		"oslo": "^1.2.1",
+		"prisma": "^5.22.0",
 		"sharp": "^0.33.5"
 	}
 }

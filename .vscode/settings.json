@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "**/routes/**/*.svelte": "svelte"
+    },
+    "explorer.fileNesting.patterns": {
+        "*.svelte": "$(capture).js,$(capture).ts,$(capture).server.ts"
+    }
+}

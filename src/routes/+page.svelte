@@ -1,15 +1,17 @@
 <script lang="ts">
 	import ImageCard from '$lib/components/ImageCard.svelte';
-	import { paintings } from '$lib/data/paintings';
-</script>
-
-<main>
-    <h1>paulmneenan@gmail.com</h1>
-    <div class="gallery">
-      {#each paintings as painting}
-        <ImageCard {...painting} />
-      {/each}
-    </div>
+	import type { PageData } from './$types';
+  
+	const { data } = $props<{ data: PageData }>();
+  </script>
+  
+  <main>
+	  <h1>paulmneenan@gmail.com</h1>
+	  <div class="gallery">
+		{#each [...data.pieces].reverse() as piece}
+		  <ImageCard {...piece} />
+		{/each}
+	  </div>
   </main>
   
 
