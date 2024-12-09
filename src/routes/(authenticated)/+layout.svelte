@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { LayoutData } from './$types';
 
-	let { children } = $props();
+	let { data, children } = $props();
 </script>
 
-// src/routes/(authenticated)/+layout.svelte
+<!-- // src/routes/(authenticated)/+layout.svelte
+{data.user.email} -->
 <div class="authenticated-layout">
 	<nav>
 		<a href="/admin">Dashboard</a>
@@ -12,9 +13,6 @@
 	</nav>
 
 	<main>
-		<script>
-			let { children } = $props();
-		</script>
 
 		{@render children()}
 	</main>

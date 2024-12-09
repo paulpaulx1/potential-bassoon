@@ -4,32 +4,44 @@ import {
     setSessionTokenCookie,
     deleteSessionTokenCookie
 } from "$lib/server/session";
-
+import { prisma } from "$lib/server/prisma";
 import type { Handle } from "@sveltejs/kit";
 
 export const handle: Handle = async ({ event, resolve }) => {
-    // Try to get the session token from cookies
+    // First check if this is a custom domain request
+    const hostname = event.request.headers.get('host');
+    console.log('Incoming request from:', hostname); // Debug log
+
+    // If it's not the main app domain, check for custom domain routing
+    if (hostname && !hostname.includes('railway.app') && !hostname.includes('localhost')) {
+        const domain = await prisma.domain.findUnique({
+            where: { domain: hostname },
+            include: { user: true }
+        });
+
+        if (domain) {
+            // For now, just return a test message
+            return new Response(`Test: This domain belongs to ${domain.user.email}`);
+        }
+    }
+
+    // If not a custom domain request, handle normal auth flow
     const token = event.cookies.get("session") ?? null;
     
-    // If no token exists, continue without authentication
     if (token === null) {
         event.locals.user = null;
         event.locals.session = null;
         return resolve(event);
     }
 
-    // Validate the token and get user information
     const { session, user } = await validateSessionToken(token);
     
     if (session !== null) {
-        // If session is valid, refresh the cookie to extend its lifetime
         setSessionTokenCookie(event, token, session.expires);
     } else {
-        // If session is invalid, clean up the cookie
         deleteSessionTokenCookie(event);
     }
 
-    // Make user and session available to all routes
     event.locals.session = session;
     event.locals.user = user;
     
