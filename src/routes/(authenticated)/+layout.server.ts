@@ -5,13 +5,15 @@ import { redirect } from '@sveltejs/kit';
 
 export const load: LayoutServerLoad = async ({ cookies }) => {
     const sessionToken = cookies.get('session');
+    
     if (!sessionToken) {
-        throw redirect(303, '/auth/signin');
+        throw redirect(303, '/sign-in');
     }
 
     const { user } = await validateSessionToken(sessionToken);
+
     if (!user) {
-        throw redirect(303, '/auth/signin');
+        throw redirect(303, '/sign-in');
     }
 
     return {

@@ -1,4 +1,3 @@
-// src/routes/auth/signin/+page.server.ts
 import { fail, redirect } from "@sveltejs/kit";
 import {
     validateSessionToken,
@@ -32,7 +31,6 @@ export const actions: Actions = {
 
             // If no user or no password record exists
             if (!user?.password) {
-                console.log('yo yo yo')
                 return fail(400, { message: "Invalid email or password" });
             }
 
@@ -66,7 +64,7 @@ export const actions: Actions = {
 };
 
 import { generateState, generateCodeVerifier } from "arctic";
-import { google } from "$lib/server/oauth";
+// import { google } from "$lib/server/oauth";
 
 import type { RequestEvent } from "@sveltejs/kit";
 
