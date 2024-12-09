@@ -19,7 +19,6 @@ declare global {
 				id: number;
 				email: string;
 				name?: string;
-				clerkId: string;
 			};
 			portfolio?: {
 				id: number;

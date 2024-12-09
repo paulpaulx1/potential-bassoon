@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import ImageCard from '$lib/components/ImageCard.svelte';
 	import type { PageData } from './$types';
   
@@ -41,4 +41,4 @@
 		gap: 32px;
 	}
 
-</style>
+</style> -->

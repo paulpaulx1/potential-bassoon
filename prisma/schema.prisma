@@ -39,6 +39,7 @@ model User {
   sessions        Session[]        
   portfolioSession PortfolioSession? 
   password        Password?
+  domains         Domain[]
 
   @@unique([googleId])
   @@map("users")
@@ -81,4 +82,16 @@ model Session {
   user_id String
   expires DateTime
   user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Domain {
+  id          String   @id @default(cuid())
+  domain      String   @unique
+  verified    Boolean  @default(false)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("domains")
 }
