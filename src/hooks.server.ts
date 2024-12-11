@@ -25,7 +25,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         }
     }
 
-    // If not a custom domain request, handle normal auth flow
+    // If not a custom domain request, handle norl auth flow
     const token = event.cookies.get("session") ?? null;
     
     if (token === null) {
