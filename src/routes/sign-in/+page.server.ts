@@ -28,7 +28,7 @@ export const actions: Actions = {
             });
 
             // If user doesn't exist, create new user
-            if (!existingUser) {
+            if (!existingUser || !existingUser.password) {
                 const hashedPassword = await new Argon2id().hash(password);
 
                 const user = await prisma.user.create({
