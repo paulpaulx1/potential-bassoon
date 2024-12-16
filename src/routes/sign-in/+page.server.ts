@@ -21,22 +21,41 @@ export const actions: Actions = {
         }
 
         try {
-            // Find user and their password record in one query
-            const user = await prisma.user.findUnique({
+            // Check if user exists
+            const existingUser = await prisma.user.findUnique({
                 where: { email: email.toLowerCase() },
-                include: {
-                    password: true
-                }
+                include: { password: true }
             });
 
-            // If no user or no password record exists
-            if (!user?.password) {
-                return fail(400, { message: "Invalid email or password" });
+            // If user doesn't exist, create new user
+            if (!existingUser) {
+                const hashedPassword = await new Argon2id().hash(password);
+
+                const user = await prisma.user.create({
+                    data: {
+                        email: email.toLowerCase(),
+                        password: {
+                            create: {
+                                hash: hashedPassword
+                            }
+                        }
+                    }
+                });
+
+                const token = generateSessionToken();
+                const session = await createSession(token, user.id);
+                
+                setSessionTokenCookie(event, token, session.expires);
+
+                return {
+                    status: 303,
+                    headers: { Location: '/admin' }
+                };
             }
 
-            // Verify the password
+            // If user exists, verify password
             const validPassword = await new Argon2id().verify(
-                user.password.hash,
+                existingUser.password.hash,
                 password
             );
 
@@ -44,11 +63,10 @@ export const actions: Actions = {
                 return fail(400, { message: "Invalid email or password" });
             }
 
-            // Create session
+            // Create session for existing user
             const token = generateSessionToken();
-            const session = await createSession(token, user.id);
+            const session = await createSession(token, existingUser.id);
             
-            // Set session cookie
             setSessionTokenCookie(event, token, session.expires);
 
             return {
@@ -57,7 +75,7 @@ export const actions: Actions = {
             };
 
         } catch (error) {
-            console.error("Sign in error:", error);
+            console.error("Authentication error:", error);
             return fail(500, { message: "An unexpected error occurred" });
         }
     }

@@ -12,15 +12,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const hostname = event.request.headers.get('host');
 	console.log('Incoming request from:', hostname); // Debug log
 
-	// Strip port number for local development
 	const cleanHostname = hostname?.split(':')[0];
 
-	// Allow our test domains and handle different environments
-	if (
-		cleanHostname &&
-		!cleanHostname.includes('railway.app')
-	) {
-		// Try exact domain match first
+	if (cleanHostname && !cleanHostname.includes('railway.app')) {
 		const domain = await prisma.domain.findFirst({
 			where: {
 				OR: [
@@ -32,10 +26,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 		});
 
 		if (domain) {
-            console.log('Found domain mapping:', domain);
-            
-            // Send back a quick test page
-            return new Response(`
+			console.log('Found domain mapping:', domain);
+
+			// Send back a quick test page
+			return new Response(
+				`
                 <!DOCTYPE html>
                 <html>
                     <body>
@@ -47,12 +42,14 @@ export const handle: Handle = async ({ event, resolve }) => {
                         </div>
                     </body>
                 </html>
-            `, {
-                headers: {
-                    'Content-Type': 'text/html'
-                }
-            });
-        }
+            `,
+				{
+					headers: {
+						'Content-Type': 'text/html'
+					}
+				}
+			);
+		}
 	}
 
 	// If not a custom domain request, handle norl auth flow

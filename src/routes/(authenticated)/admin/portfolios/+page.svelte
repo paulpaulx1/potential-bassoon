@@ -6,7 +6,6 @@
 
 <div class="container">
     <SignOut></SignOut>
-    <h1>Your Portfolios</h1>
 
     <div class="account-info">
         <h2>Account Info</h2>
@@ -16,6 +15,8 @@
             <p><span>Member since:</span> {new Date(data.user.createdAt).toLocaleDateString()}</p>
         </div>
     </div>
+    
+    <h1>Your Portfolios</h1>
 
     <div class="portfolios">
         <div class="header">

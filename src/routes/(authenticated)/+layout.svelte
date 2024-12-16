@@ -17,4 +17,5 @@
 	.authenticated-layout {
 		min-height: 100vh;
 	}
+
 </style>
