@@ -7,11 +7,6 @@
 <!-- // src/routes/(authenticated)/+layout.svelte
 {data.user.email} -->
 <div class="authenticated-layout">
-	<nav>
-		<a href="/admin">Dashboard</a>
-		<a href="/portfolios">Portfolios</a>
-	</nav>
-
 	<main>
 
 		{@render children()}
