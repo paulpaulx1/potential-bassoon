@@ -53,7 +53,7 @@ export const actions: Actions = {
 
             return {
                 status: 303,
-                headers: { Location: '/portfolios' }
+                headers: { Location: '/admin' }
             };
 
         } catch (error) {
