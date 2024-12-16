@@ -7,7 +7,9 @@
         { href: '/admin', label: 'Dashboard', match: /^\/admin$/ },
         { href: '/admin/portfolios', label: 'Portfolios', match: /^\/admin\/portfolios/ },
         { href: '/admin/upload', label: 'Upload', match: /^\/admin\/upload/ },
-        { href: '/admin/preview', label: 'Preview', match: /^\/admin\/preview/ }
+        { href: '/admin/preview', label: 'Preview', match: /^\/admin\/preview/ },
+        { href: '/admin/domains', label: 'Domains', match: /^\/admin\/domains/ }
+
         // Add analytics later if you get to it
     ];
 </script>
