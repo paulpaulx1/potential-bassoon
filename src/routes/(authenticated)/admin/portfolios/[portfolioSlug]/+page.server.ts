@@ -1,60 +1,110 @@
 // src/routes/portfolios/[portfolioSlug]/+page.server.ts
 import type { PageServerLoad, Actions } from './$types';
-import type { RequestEvent } from '@sveltejs/kit';
-import { error, redirect } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
-import { createUploadthing } from "uploadthing/server";
+import { UTApi } from 'uploadthing/server';
+import { redirect } from '@sveltejs/kit';
+
+const utapi = new UTApi();
 
 export const load: PageServerLoad = async (event) => {
-    const { user } = event.locals;
-    const portfolioSlug = event.params.portfolioSlug;
+	const { user } = event.locals;
+	const portfolioSlug = event.params.portfolioSlug;
 
-    console.log('Attempting to find portfolio with slug:', portfolioSlug);
+	if (!user) throw redirect(303, '/sign-in');
 
-    if (!user) throw redirect(303, '/sign-in');
+	const portfolio = await prisma.portfolio.findUnique({
+		where: {
+			slug: portfolioSlug,
+			userId: user.id
+		},
+		include: {
+			pieces: {
+				orderBy: { createdAt: 'desc' }
+			}
+		}
+	});
 
-    const portfolio = await prisma.portfolio.findUnique({
-        where: { 
-            slug: portfolioSlug,
-            userId: user.id 
-        },
-        include: {
-            pieces: {
-                orderBy: { createdAt: 'desc' }
-            }
-        }
-    });
+	if (!portfolio) throw error(404, 'Portfolio not found');
 
-    if (!portfolio) throw error(404, 'Portfolio not found');
-
-    return { portfolio };
+	return { portfolio };
 };
 
 export const actions: Actions = {
-    upload: async (event) => {
-        const { user } = event.locals;
-        const portfolioSlug = event.params.portfolioSlug;
+	createPiece: async (event) => {
+		const { user } = event.locals;
+		const portfolioSlug = event.params.portfolioSlug;
 
-        if (!user) return error(401, 'Unauthorized');
+		if (!user) return error(401, 'Unauthorized');
 
-        const portfolio = await prisma.portfolio.findUnique({
-            where: { 
-                slug: portfolioSlug,
-                userId: user.id 
-            }
-        });
+		const portfolio = await prisma.portfolio.findUnique({
+			where: {
+				slug: portfolioSlug,
+				userId: user.id
+			}
+		});
 
-        if (!portfolio) return error(404, 'Portfolio not found');
+		if (!portfolio) return error(404, 'Portfolio not found');
 
-        const formData = await event.request.formData();
-        const file = formData.get('file') as File;
+		try {
+			const formData = await event.request.formData();
 
-        // Implement your file upload logic here
-        // This is a placeholder - you'll want to integrate with UploadThing
-        
-        return {
-            status: 200,
-            message: 'Upload successful'
-        };
-    }
+			const title = formData.get('title') as string;
+			const fullImageUrl = formData.get('fullImageUrl') as string;
+			const blurImageUrl = formData.get('blurImageUrl') as string;
+			const fileKey = formData.get('fileKey') as string;
+			const medium = formData.get('medium') as string;
+			const dimensions = formData.get('dimensions') as string;
+			const year = formData.get('year') ? Number(formData.get('year')) : undefined;
+
+			// Generate slug
+			const slug = title.toLowerCase().replace(/\s+/g, '-');
+
+			const piece = await prisma.piece.create({
+				data: {
+					title,
+					slug,
+					fullImageUrl,
+					blurImageUrl: blurImageUrl || '',
+					portfolioId: portfolio.id,
+					medium: medium || undefined,
+					dimensions: dimensions || undefined,
+					year: year,
+					uploadThingKey: fileKey
+				}
+			});
+
+			return {
+				status: 200,
+				body: { piece }
+			};
+		} catch (err) {
+			console.error('Error creating piece:', err);
+			return error(500, 'Failed to create piece');
+		}
+	},
+
+	cancelUpload: async (event) => {
+		const { user } = event.locals;
+
+		if (!user) return error(401, 'Unauthorized');
+
+		try {
+			const formData = await event.request.formData();
+			const fileKey = formData.get('fileKey') as string;
+
+			if (fileKey) {
+				// Delete the file from UploadThing
+				await utapi.deleteFiles(fileKey);
+			}
+
+			return {
+				status: 200,
+				body: { message: 'Upload cancelled' }
+			};
+		} catch (err) {
+			console.error('Error cancelling upload:', err);
+			return error(500, 'Failed to cancel upload');
+		}
+	}
 };

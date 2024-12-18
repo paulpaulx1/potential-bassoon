@@ -18,30 +18,31 @@ model Password {
 
 model PortfolioSession {
   id        String   @id @default(cuid())
-  userId    String   @unique  // One active portfolio session per user
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique  // The long-lived access token
-  expiresAt DateTime // Tied to subscription end date
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("portfolio_sessions")
 }
 
 model User {
-  id              String           @id @default(cuid())
-  email           String           @unique
-  name            String?
-  bio             String?
-  googleId        String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  portfolios      Portfolio[]
-  sessions        Session[]        
-  portfolioSession PortfolioSession? 
-  password        Password?
-  domains         Domain[]
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String?
+  bio              String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  googleId         String?           @unique
+  sessions         Session[]
+  domains          Domain[]
+  password         Password?
+  portfolioSession PortfolioSession?
+  portfolios       Portfolio[]
+  stripeCustomerId String?           @unique  // nullable
+  isSubscribed     Boolean           @default(false)  // Simple subscription flag
 
-  @@unique([googleId])
   @@map("users")
 }
 
@@ -53,26 +54,27 @@ model Portfolio {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   pieces      Piece[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("portfolios")
 }
 
 model Piece {
-  id           Int       @id @default(autoincrement())
-  title        String
-  slug         String    @unique
-  description  String?
-  fullImageUrl String
-  blurImageUrl String
-  medium       String?
-  dimensions   String?
-  year         Int?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  portfolioId  Int
-  portfolio    Portfolio @relation(fields: [portfolioId], references: [id])
+  id             Int       @id @default(autoincrement())
+  title          String
+  slug           String    @unique
+  description    String?
+  fullImageUrl   String
+  blurImageUrl   String
+  medium         String?
+  dimensions     String?
+  year           Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  portfolioId    Int
+  uploadThingKey String
+  portfolio      Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
   @@map("pieces")
 }
@@ -85,13 +87,13 @@ model Session {
 }
 
 model Domain {
-  id          String   @id @default(cuid())
-  domain      String   @unique
-  verified    Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  domain    String   @unique
+  verified  Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("domains")
 }
