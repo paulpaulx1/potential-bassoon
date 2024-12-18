@@ -1,99 +1,147 @@
-<!-- routes/portfolios/+page.svelte -->
 <script lang="ts">
-    import SignOut from '$lib/components/SignOut.svelte';
-    export let data;
+    import { enhance } from '$app/forms';
+    import type { Portfolio } from '@prisma/client';
+
+    export let data: { 
+        portfolios: Pick<Portfolio, 'slug' | 'title'>[] 
+    };
+
+    let deleteModalOpen = false;
+    let portfolioToDelete: Pick<Portfolio, 'slug' | 'title'> | null = null;
+    let isCreating = false;
+    let creationError: string | null = null;
+
+    function deletePortfolio(slug: string, title: string) {
+        portfolioToDelete = { slug, title };
+        deleteModalOpen = true;
+    }
+
+    async function confirmDeletePortfolio() {
+        if (!portfolioToDelete) return;
+
+        try {
+            const res = await fetch(`/admin/portfolios/${portfolioToDelete.slug}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                // Refresh the portfolio list
+                data.portfolios = data.portfolios.filter((p) => p.slug !== portfolioToDelete?.slug);
+                deleteModalOpen = false;
+            } else {
+                const errorData = await res.json();
+                console.error('Error deleting portfolio:', errorData);
+            }
+        } catch (err) {
+            console.error('Error deleting portfolio:', err);
+        } finally {
+            portfolioToDelete = null;
+            deleteModalOpen = false;
+        }
+    }
 </script>
 
-<div class="container">
-    <SignOut></SignOut>
+<div class="portfolio-creation-form">
+    <h2>Your Portfolios</h2>
+    <form 
+        method="POST" 
+        use:enhance={() => {
+            isCreating = true;
+            creationError = null;
 
-    <div class="account-info">
-        <h2>Account Info</h2>
-        <div class="info-grid">
-            <p><span>Email:</span> {data.user.email}</p>
-            <p><span>Name:</span> {data.user.name}</p>
-            <p><span>Member since:</span> {new Date(data.user.createdAt).toLocaleDateString()}</p>
-        </div>
-    </div>
-    
-    <h1>Your Portfolios</h1>
-
-    <div class="portfolios">
-        <div class="header">
-            <h2>Your Portfolios</h2>
-            <button on:click={() => alert('Create portfolio functionality coming soon!')}>
-                Create New Portfolio
-            </button>
-        </div>
+            return async ({ result, update }) => {
+                isCreating = false;
+                
+                if (result.type === 'success') {
+                    await update();
+                } else if (result.type === 'failure') {
+                    // Type guard to handle different possible error structures
+                    if (result.data && typeof result.data === 'object') {
+                        const errorData = result.data as Record<string, unknown>;
+                        creationError = errorData.message 
+                            ? String(errorData.message) 
+                            : 'Failed to create portfolio';
+                    } else {
+                        creationError = 'Failed to create portfolio';
+                    }
+                }
+            };
+        }}
+    >
+        <input
+            type="text"
+            name="title"
+            placeholder="Portfolio Title"
+            required
+            disabled={isCreating}
+        />
+        <button type="submit" disabled={isCreating}>
+            {isCreating ? 'Creating...' : 'Create Portfolio'}
+        </button>
         
-        <p class="empty-state">
-            No portfolios yet. Click "Create New Portfolio" to get started!
-        </p>
-    </div>
+        {#if creationError}
+            <p class="error-message">{creationError}</p>
+        {/if}
+    </form>
 </div>
 
+{#if data.portfolios.length === 0}
+    <p class="empty-state">No portfolios yet. Create your first portfolio!</p>
+{:else}
+    <div class="portfolio-list">
+        {#each data.portfolios as portfolio}
+            <div class="portfolio-item">
+                <a href={`/admin/portfolios/${portfolio.slug}`}>{portfolio.title}</a>
+                <button 
+                    class="delete-btn" 
+                    on:click={() => deletePortfolio(portfolio.slug, portfolio.title)}
+                >
+                    Delete
+                </button>
+            </div>
+        {/each}
+    </div>
+{/if}
+
+{#if deleteModalOpen}
+    <div class="modal">
+        <div class="modal-content">
+            <h2>Delete Portfolio</h2>
+            <p>Are you sure you want to delete the portfolio "{portfolioToDelete?.title}" and all of its contents?</p>
+            <div class="modal-actions">
+                <button 
+                    class="confirm-btn" 
+                    on:click={confirmDeletePortfolio}
+                >
+                    Confirm
+                </button>
+                <button 
+                    class="cancel-btn" 
+                    on:click={() => { 
+                        deleteModalOpen = false; 
+                        portfolioToDelete = null; 
+                    }}
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
+
 <style>
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 1.5rem;
+    .error-message {
+        color: #e53e3e;
+        margin-top: 0.5rem;
     }
 
-    h1 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
-    .account-info, .portfolios {
-        background-color: white;
-        border-radius: 0.5rem;
-        padding: 1.5rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .account-info {
-        margin-bottom: 1.5rem;
-    }
-
-    h2 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-
-    .info-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .info-grid p span {
-        font-weight: 500;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    button {
-        background-color: #2563eb;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    button:hover {
-        background-color: #1d4ed8;
-    }
-
-    .empty-state {
-        color: #4b5563;
+    input:disabled {
+        background-color: #f5f5f5;
+        cursor: not-allowed;
     }
 </style>
