@@ -1,4 +1,3 @@
-<!-- src/lib/components/PortfolioMap.svelte -->
 <script lang="ts">
     import { enhance } from '$app/forms';
     import type { Portfolio } from '@prisma/client';
@@ -54,10 +53,17 @@
                 isCreating = false;
                 
                 if (result.type === 'success') {
-                    // Optionally add the new portfolio to the list without a full page reload
                     await update();
                 } else if (result.type === 'failure') {
-                    creationError = result.data?.message ?? 'Failed to create portfolio';
+                    // Type guard to handle different possible error structures
+                    if (result.data && typeof result.data === 'object') {
+                        const errorData = result.data as Record<string, unknown>;
+                        creationError = errorData.message 
+                            ? String(errorData.message) 
+                            : 'Failed to create portfolio';
+                    } else {
+                        creationError = 'Failed to create portfolio';
+                    }
                 }
             };
         }}
@@ -124,13 +130,11 @@
 {/if}
 
 <style>
-    /* Previous styles remain the same */
     .error-message {
         color: #e53e3e;
         margin-top: 0.5rem;
     }
 
-    /* Disable state for buttons */
     button:disabled {
         opacity: 0.5;
         cursor: not-allowed;

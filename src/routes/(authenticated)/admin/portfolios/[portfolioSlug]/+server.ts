@@ -1,12 +1,12 @@
 import { prisma } from '$lib/server/prisma';
-import { error, redirect } from '@sveltejs/kit';
+import { error, redirect, json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import { createUploadthing, UTApi } from "uploadthing/server";
 import { ourFileRouter } from "$lib/server/uploadthing";
 
 const f = createUploadthing();
 
-export async function POST({ params, locals, request }) {
+export async function POST({ params, locals, request }: RequestEvent) {
     const { user } = locals;
     const portfolioSlug = params.portfolioSlug;
 
