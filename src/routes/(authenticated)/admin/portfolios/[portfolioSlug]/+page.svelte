@@ -2,6 +2,7 @@
 	import { createUploader } from '$lib/utils/uploadthing';
 	import { UploadButton } from '@uploadthing/svelte';
 	import { enhance } from '$app/forms';
+	import { invalidate, invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
 
@@ -35,17 +36,14 @@
 	const uploader = createUploader('imageUploader', {
 		onClientUploadComplete: async (res) => {
 			console.log('Upload complete', res);
-
-			// Update uploaded files state
-			uploadedFiles = res.map((file: any) => ({
-				url: file.url,
-				key: file.key,
-				blurUrl: ''
-			}));
-
-			// Open modal for the first uploaded file
 			if (res.length > 0) {
-				currentFile = uploadedFiles[0];
+				// Open modal with just the data we need
+				pieceDetails = { title: '', medium: '', dimensions: '', year: '' }; // Reset form
+				currentFile = {
+					// Could rename this to something like uploadResult or fileInfo
+					url: res[0].url,
+					key: res[0].key
+				};
 				isModalOpen = true;
 			}
 		},
@@ -57,6 +55,7 @@
 	// Method to submit piece details
 	async function submitPieceDetails() {
 		if (!currentFile) return;
+		console.log('Starting submission...');
 
 		isSubmitting = true;
 		submissionError = null;
@@ -67,32 +66,36 @@
 		formData.append('blurImageUrl', currentFile.blurUrl || '');
 		formData.append('fileKey', currentFile.key);
 
+		// Optional fields - only append if they have values
 		if (pieceDetails.medium) formData.append('medium', pieceDetails.medium);
 		if (pieceDetails.dimensions) formData.append('dimensions', pieceDetails.dimensions);
 		if (pieceDetails.year) formData.append('year', pieceDetails.year);
 
 		try {
-			const response = await fetch(`/admin/portfolios/${data.portfolio.slug}?/createPiece`, {
+			const response = await fetch(`${window.location.pathname}?/createPiece`, {
 				method: 'POST',
-				body: formData
+				body: formData // FormData automatically sets correct headers
 			});
 
-			const result = await response.json();
-
-			if (response.ok) {
-				data.portfolio.pieces = [result.piece, ...data.portfolio.pieces];
-
-				// Reset state
-				pieceDetails = { title: '', medium: '', dimensions: '', year: '' };
-				uploadedFiles = uploadedFiles.filter((f) => f.url !== currentFile?.url);
-				currentFile = null;
-				isModalOpen = false;
-			} else {
-				submissionError = result.message || 'Failed to create piece';
+			if (!response.ok) {
+				const result = await response.json();
+				throw new Error(result.message || 'Failed to create piece');
 			}
+
+			console.log('Before invalidate');
+			await invalidateAll();
+
+			// Add small delay before state reset
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			// Reset state
+			pieceDetails = { title: '', medium: '', dimensions: '', year: '' };
+			uploadedFiles = uploadedFiles.filter((f) => f.url !== currentFile?.url);
+			currentFile = null;
+			isModalOpen = false;
 		} catch (error) {
-			console.error('Error submitting piece:', error);
-			submissionError = 'An unexpected error occurred';
+			console.error('Error:', error);
+			submissionError = (error as Error).message || 'An unexpected error occurred';
 		} finally {
 			isSubmitting = false;
 		}
@@ -128,13 +131,12 @@
 	// Method to delete a piece
 	async function deletePiece(pieceId: string, uploadThingKey: string) {
 		try {
-			const response = await fetch(`/portfolios/${data.portfolio.slug}/pieces/${pieceId}`, {
+			const response = await fetch(`${window.location.pathname}/pieces/${pieceId}`, {
 				method: 'DELETE'
 			});
 
 			if (response.ok) {
-				// Remove the piece from the list
-				data.portfolio.pieces = data.portfolio.pieces.filter((p) => p.id !== pieceId);
+				await invalidateAll(); // Refresh the view after successful delete
 			} else {
 				const result = await response.json();
 				console.error('Failed to delete piece:', result.message);
@@ -193,7 +195,7 @@
 					<img src={currentFile.url} alt="Uploaded piece" class="modal-image" />
 				</div>
 
-				<form class="piece-details-form" use:enhance>
+				<form class="piece-details-form">
 					<div class="form-group">
 						<label for="title" class="form-label">
 							Piece Title <span class="required-marker">*</span>
@@ -279,6 +281,12 @@
 	/* Previous styles remain the same */
 	.piece-image-container {
 		position: relative;
+		max-width: 400px;
+	}
+
+	.piece-image-container img,
+	.modal-image-container img {
+		max-width: 400px;
 	}
 
 	.delete-piece-btn {

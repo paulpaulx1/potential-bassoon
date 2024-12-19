@@ -35,7 +35,7 @@ export const actions: Actions = {
 		const { user } = event.locals;
 		const portfolioSlug = event.params.portfolioSlug;
 
-		if (!user) return error(401, 'Unauthorized');
+		if (!user) throw error(401, 'Unauthorized');
 
 		const portfolio = await prisma.portfolio.findUnique({
 			where: {
@@ -44,7 +44,7 @@ export const actions: Actions = {
 			}
 		});
 
-		if (!portfolio) return error(404, 'Portfolio not found');
+		if (!portfolio) throw error(404, 'Portfolio not found');
 
 		try {
 			const formData = await event.request.formData();
@@ -75,8 +75,7 @@ export const actions: Actions = {
 			});
 
 			return {
-				status: 200,
-				body: { piece }
+				piece
 			};
 		} catch (err) {
 			console.error('Error creating piece:', err);
