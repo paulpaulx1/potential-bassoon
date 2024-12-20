@@ -1,19 +1,12 @@
 <script lang="ts">
 	import { createUploader } from '$lib/utils/uploadthing';
-	import { UploadButton } from '@uploadthing/svelte';
-	import { enhance } from '$app/forms';
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
+	import UploadSection from '$lib/components/editor/UploadSection.svelte';
+	import PieceGrid from '$lib/components/editor/PieceGrid.svelte';
+	import PieceDetailsModal from '$lib/components/editor/PieceDetailsModal.svelte';
 
 	let { data } = $props();
 
-	// State for tracking uploaded files
-	let uploadedFiles: Array<{
-		url: string;
-		key: string;
-		blurUrl?: string;
-	}> = $state([]);
-
-	// Modal state
 	let isModalOpen = $state(false);
 	let currentFile = $state<{
 		url: string;
@@ -21,114 +14,46 @@
 		blurUrl?: string;
 	} | null>(null);
 
-	// Piece details state
-	let pieceDetails = $state({
-		title: '',
-		medium: '',
-		dimensions: '',
-		year: ''
-	});
-
-	// Loading and error states
 	let isSubmitting = $state(false);
 	let submissionError = $state<string | null>(null);
 
-	const uploader = createUploader('imageUploader', {
-		onClientUploadComplete: async (res) => {
-			console.log('Upload complete', res);
-			if (res.length > 0) {
-				// Open modal with just the data we need
-				pieceDetails = { title: '', medium: '', dimensions: '', year: '' }; // Reset form
-				currentFile = {
-					// Could rename this to something like uploadResult or fileInfo
-					url: res[0].url,
-					key: res[0].key
-				};
-				isModalOpen = true;
-			}
-		},
-		onUploadError: (error) => {
-			console.error('Upload error', error);
-		}
-	});
-
-	// Method to submit piece details
-	async function submitPieceDetails() {
-		if (!currentFile) return;
-		console.log('Starting submission...');
-
-		isSubmitting = true;
-		submissionError = null;
-
-		const formData = new FormData();
-		formData.append('title', pieceDetails.title);
-		formData.append('fullImageUrl', currentFile.url);
-		formData.append('blurImageUrl', currentFile.blurUrl || '');
-		formData.append('fileKey', currentFile.key);
-
-		// Optional fields - only append if they have values
-		if (pieceDetails.medium) formData.append('medium', pieceDetails.medium);
-		if (pieceDetails.dimensions) formData.append('dimensions', pieceDetails.dimensions);
-		if (pieceDetails.year) formData.append('year', pieceDetails.year);
-
-		try {
-			const response = await fetch(`${window.location.pathname}?/createPiece`, {
-				method: 'POST',
-				body: formData // FormData automatically sets correct headers
-			});
-
-			if (!response.ok) {
-				const result = await response.json();
-				throw new Error(result.message || 'Failed to create piece');
-			}
-
-			console.log('Before invalidate');
-			await invalidateAll();
-
-			// Add small delay before state reset
-			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			// Reset state
-			pieceDetails = { title: '', medium: '', dimensions: '', year: '' };
-			uploadedFiles = uploadedFiles.filter((f) => f.url !== currentFile?.url);
-			currentFile = null;
-			isModalOpen = false;
-		} catch (error) {
-			console.error('Error:', error);
-			submissionError = (error as Error).message || 'An unexpected error occurred';
-		} finally {
-			isSubmitting = false;
-		}
+	async function handlePieceSuccess(pieceDetails: {
+		title: string | Blob;
+		medium: string | Blob;
+		dimensions: string | Blob;
+		year: string | Blob;
+	}) {
+		// Just handle the UI updates after successful submission
+		await invalidateAll();
+		currentFile = null;
+		isModalOpen = false;
 	}
 
-	// Method to cancel upload
-	async function cancelUpload() {
+	async function handleCancelUpload() {
 		if (!currentFile) return;
 
-		const formData = new FormData();
-		formData.append('fileKey', currentFile.key);
-
 		try {
-			const response = await fetch(`/portfolios/${data.portfolio.slug}?/cancelUpload`, {
+			const formData = new FormData();
+			console.log('form Data', formData.entries())
+			formData.append('fileKey', currentFile.key);
+			console.log('form Data with filekey', ...formData)
+
+			const response = await fetch(`?/cancelUpload`, {
 				method: 'POST',
 				body: formData
 			});
 
-			if (response.ok) {
-				// Remove from uploaded files
-				uploadedFiles = uploadedFiles.filter((f) => f.url !== currentFile?.url);
-				currentFile = null;
-				isModalOpen = false;
-			} else {
-				const result = await response.json();
-				console.error('Failed to cancel upload:', result.message);
+			if (!response.ok) {
+				throw new Error('Failed to cancel upload');
 			}
+
+			currentFile = null;
+			isModalOpen = false;
 		} catch (error) {
 			console.error('Error cancelling upload:', error);
 		}
 	}
 
-	// Method to delete a piece
 	async function deletePiece(pieceId: string, uploadThingKey: string) {
 		try {
 			const response = await fetch(`${window.location.pathname}/pieces/${pieceId}`, {
@@ -136,7 +61,7 @@
 			});
 
 			if (response.ok) {
-				await invalidateAll(); // Refresh the view after successful delete
+				await invalidateAll();
 			} else {
 				const result = await response.json();
 				console.error('Failed to delete piece:', result.message);
@@ -150,176 +75,30 @@
 <div class="portfolio-container">
 	<h1 class="portfolio-title">{data.portfolio.title}</h1>
 
-	<div class="upload-section">
-		<h2 class="section-title">Upload New Piece</h2>
-		<div class="upload-button-container">
-			<UploadButton {uploader} />
-		</div>
-	</div>
+	<UploadSection
+		onFileUploaded={(event) => {
+			currentFile = event;
+			isModalOpen = true;
+		}}
+	/>
 
 	{#if data.portfolio.pieces.length === 0}
 		<p class="empty-state">No pieces in this portfolio yet</p>
 	{:else}
-		<div class="existing-pieces-section">
-			<h2 class="section-title">Existing Pieces</h2>
-			<div class="pieces-grid">
-				{#each data.portfolio.pieces as piece}
-					<div class="piece-card">
-						<div class="piece-image-container">
-							<img src={piece.fullImageUrl} alt={piece.title} class="piece-image" />
-							<button
-								class="delete-piece-btn"
-								onclick={() => deletePiece(piece.id, piece.uploadThingKey)}
-							>
-								✕
-							</button>
-						</div>
-						<div class="piece-details">
-							<h3 class="piece-title">{piece.title}</h3>
-							{#if piece.medium}
-								<p class="piece-medium">{piece.medium}</p>
-							{/if}
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
+		<PieceGrid pieces={data.portfolio.pieces} onDelete={deletePiece} />
 	{/if}
 
-	{#if isModalOpen && currentFile}
-		<div class="modal-overlay">
-			<div class="modal-content">
-				<h2 class="modal-title">Add Piece Details</h2>
-
-				<div class="modal-image-container">
-					<img src={currentFile.url} alt="Uploaded piece" class="modal-image" />
-				</div>
-
-				<form class="piece-details-form">
-					<div class="form-group">
-						<label for="title" class="form-label">
-							Piece Title <span class="required-marker">*</span>
-						</label>
-						<input
-							type="text"
-							id="title"
-							placeholder="Enter piece title"
-							bind:value={pieceDetails.title}
-							required
-							class="form-input"
-							disabled={isSubmitting}
-						/>
-					</div>
-
-					<div class="form-row">
-						<div class="form-group">
-							<label for="medium" class="form-label"> Medium </label>
-							<input
-								type="text"
-								id="medium"
-								placeholder="e.g., Oil on Canvas"
-								bind:value={pieceDetails.medium}
-								class="form-input"
-								disabled={isSubmitting}
-							/>
-						</div>
-
-						<div class="form-group">
-							<label for="year" class="form-label"> Year </label>
-							<input
-								type="number"
-								id="year"
-								placeholder="Creation year"
-								bind:value={pieceDetails.year}
-								class="form-input"
-								disabled={isSubmitting}
-							/>
-						</div>
-					</div>
-
-					<div class="form-group">
-						<label for="dimensions" class="form-label"> Dimensions </label>
-						<input
-							type="text"
-							id="dimensions"
-							placeholder="e.g., 24 x 36 inches"
-							bind:value={pieceDetails.dimensions}
-							class="form-input"
-							disabled={isSubmitting}
-						/>
-					</div>
-
-					{#if submissionError}
-						<p class="error-message">{submissionError}</p>
-					{/if}
-
-					<div class="modal-actions">
-						<button
-							type="button"
-							class="btn btn-cancel"
-							onclick={cancelUpload}
-							disabled={isSubmitting}
-						>
-							Cancel Upload
-						</button>
-						<button
-							type="button"
-							class="btn btn-save"
-							disabled={!pieceDetails.title || isSubmitting}
-							onclick={submitPieceDetails}
-						>
-							{isSubmitting ? 'Saving...' : 'Save Piece'}
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	{/if}
+	<PieceDetailsModal
+		{currentFile}
+		isOpen={isModalOpen}
+		{isSubmitting}
+		{submissionError}
+		onSuccess={async () => {
+			// renamed from onSubmit
+			await invalidateAll();
+			currentFile = null;
+			isModalOpen = false;
+		}}
+		onCancel={handleCancelUpload}
+	/>
 </div>
-
-<style>
-	/* Previous styles remain the same */
-	.piece-image-container {
-		position: relative;
-		max-width: 400px;
-	}
-
-	.piece-image-container img,
-	.modal-image-container img {
-		max-width: 400px;
-	}
-
-	.delete-piece-btn {
-		position: absolute;
-		top: 10px;
-		right: 10px;
-		background-color: rgba(255, 0, 0, 0.7);
-		color: white;
-		border: none;
-		border-radius: 50%;
-		width: 30px;
-		height: 30px;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		cursor: pointer;
-		transition: background-color 0.2s;
-	}
-
-	.delete-piece-btn:hover {
-		background-color: rgba(255, 0, 0, 0.9);
-	}
-
-	.error-message {
-		color: #e53e3e;
-		margin-top: 0.5rem;
-		text-align: center;
-	}
-
-	/* Disabled state styles */
-	input:disabled,
-	button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-</style>
