@@ -3,7 +3,7 @@ import { error, type RequestEvent } from '@sveltejs/kit';
 import { UTApi } from 'uploadthing/server'; 
 import { prisma } from '$lib/server/prisma';
 
-const utapi = new UTApi();  // Make sure we're instantiating it
+const utapi = new UTApi(); 
 
 export async function DELETE({ params, locals }: RequestEvent) {
     const { user } = locals;

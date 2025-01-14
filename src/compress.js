@@ -26,12 +26,14 @@ async function compressImages() {
       // Tiny blur version (20-50KB)
       await sharp(path.join(sourceDir, file))
         .resize(400, null, { withoutEnlargement: true })
+        .withMetadata({})
         .jpeg({ quality: 20 })
         .toFile(path.join(targetDir, `${baseName}-blur.jpg`));
 
       // Main version (~500KB)
       await sharp(path.join(sourceDir, file))
         .resize(1200, null, { withoutEnlargement: true })
+        .withMetadata({})
         .jpeg({ quality: 80 })
         .toFile(path.join(targetDir, `${baseName}-full.jpg`));
       

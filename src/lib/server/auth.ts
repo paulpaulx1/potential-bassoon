@@ -34,7 +34,6 @@ export async function registerUser(email: string, password: string): Promise<{
             }
         });
 
-        // Then create the password record
         await tx.password.create({
             data: {
                 hash,
@@ -55,7 +54,7 @@ export async function registerUser(email: string, password: string): Promise<{
         expiresAt: session.expires
     };
 }
-// Session management code stays the same
+
 export function generateSessionToken(): string {
     const bytes = new Uint8Array(20);
     crypto.getRandomValues(bytes);

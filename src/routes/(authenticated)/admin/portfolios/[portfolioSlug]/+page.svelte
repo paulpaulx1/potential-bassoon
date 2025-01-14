@@ -34,9 +34,7 @@
 
 		try {
 			const formData = new FormData();
-			console.log('form Data', formData.entries())
 			formData.append('fileKey', currentFile.key);
-			console.log('form Data with filekey', ...formData)
 
 			const response = await fetch(`?/cancelUpload`, {
 				method: 'POST',
@@ -54,7 +52,7 @@
 		}
 	}
 
-	async function deletePiece(pieceId: string, uploadThingKey: string) {
+	async function deletePiece(pieceId: string) {
 		try {
 			const response = await fetch(`${window.location.pathname}/pieces/${pieceId}`, {
 				method: 'DELETE'
@@ -93,12 +91,7 @@
 		isOpen={isModalOpen}
 		{isSubmitting}
 		{submissionError}
-		onSuccess={async () => {
-			// renamed from onSubmit
-			await invalidateAll();
-			currentFile = null;
-			isModalOpen = false;
-		}}
+		onSuccess={handlePieceSuccess}
 		onCancel={handleCancelUpload}
 	/>
 </div>

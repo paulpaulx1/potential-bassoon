@@ -28,22 +28,35 @@ model PortfolioSession {
 }
 
 model User {
-  id               String            @id @default(cuid())
-  email            String            @unique
-  name             String?
-  bio              String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  googleId         String?           @unique
-  sessions         Session[]
-  domains          Domain[]
-  password         Password?
-  portfolioSession PortfolioSession?
-  portfolios       Portfolio[]
-  stripeCustomerId String?           @unique  // nullable
-  isSubscribed     Boolean           @default(false)  // Simple subscription flag
+  id                  String            @id @default(cuid())
+  email               String            @unique
+  name                String?
+  bio                 String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  googleId            String?           @unique
+  stripeCustomerId    String?           @unique
+  isSubscribed        Boolean           @default(false)
+  subscription        Subscription?
+  sessions            Session[]
+  domains             Domain[]
+  password            Password?
+  portfolioSession    PortfolioSession?
+  portfolios          Portfolio[]
 
   @@map("users")
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id])
+  stripeSubscriptionId String    @unique
+  status               String
+  currentPeriodEnd     DateTime
+  cancelledAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model Portfolio {
@@ -53,6 +66,7 @@ model Portfolio {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  pieceOrder  String[]
   userId      String
   pieces      Piece[]
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -61,7 +75,7 @@ model Portfolio {
 }
 
 model Piece {
-  id             String   @id @default(cuid()) 
+  id             String    @id @default(cuid())
   title          String
   slug           String    @unique
   description    String?

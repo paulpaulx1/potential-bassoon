@@ -108,5 +108,11 @@ export const handle: Handle = async ({ event, resolve }) => {
     event.locals.session = session;
     event.locals.user = user;
 
+    if (pathname.startsWith('/edit') || pathname.startsWith('/upload')) {
+        if (!user?.isSubscribed) {
+            return new Response('Subscription required', { status: 403 });
+        }
+    }
+
     return resolve(event);
 };

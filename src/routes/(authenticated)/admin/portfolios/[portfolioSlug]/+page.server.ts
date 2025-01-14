@@ -7,6 +7,14 @@ import { redirect } from '@sveltejs/kit';
 
 const utapi = new UTApi();
 
+function sortPiecesByOrder(pieces: any[], pieceOrder: string[]) {
+	return [...pieces].sort((a, b) => {
+		const aIndex = pieceOrder.indexOf(a.id);
+		const bIndex = pieceOrder.indexOf(b.id);
+		return aIndex - bIndex;
+	});
+}
+
 export const load: PageServerLoad = async (event) => {
 	const { user } = event.locals;
 	const portfolioSlug = event.params.portfolioSlug;
@@ -20,12 +28,18 @@ export const load: PageServerLoad = async (event) => {
 		},
 		include: {
 			pieces: {
+				// Default order for new portfolios or if pieceOrder isn't set
 				orderBy: { createdAt: 'desc' }
 			}
 		}
 	});
 
 	if (!portfolio) throw error(404, 'Portfolio not found');
+
+	// If we have a pieceOrder, use it to sort
+	if (portfolio.pieceOrder?.length) {
+		portfolio.pieces = sortPiecesByOrder(portfolio.pieces, portfolio.pieceOrder);
+	}
 
 	return { portfolio };
 };
@@ -84,8 +98,6 @@ export const actions: Actions = {
 	},
 
 	cancelUpload: async (event) => {
-		console.log('PAGE.SERVER.TS CANCEL UPLOAD ACTION CALLED');
-
 		const { user } = event.locals;
 
 		if (!user) return error(401, 'Unauthorized');
@@ -93,7 +105,6 @@ export const actions: Actions = {
 		try {
 			const formData = await event.request.formData();
 			const fileKey = formData.get('fileKey') as string;
-			console.log('Received fileKey:', fileKey); // Add this log
 
 			if (fileKey) {
 				// Delete the file from UploadThing

@@ -1,10 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import type { RequestEvent } from '@sveltejs/kit';
-import { createUploadthing, UTApi } from "uploadthing/server";
-import { ourFileRouter } from "$lib/server/uploadthing";
-
-const f = createUploadthing();
 
 export const load = async (event: RequestEvent) => {
     const { user } = event.locals;
